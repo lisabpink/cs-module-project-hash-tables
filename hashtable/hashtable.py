@@ -13,44 +13,42 @@ class HashTableEntry:
 MIN_CAPACITY = 8
 
 
+class LinkedList:
+    def __init__(self):
+        self.head = None
+
+
 class HashTable:
     """
-    A hash table that with `capacity` buckets
-    that accepts string keys
-
-    Implement this.
+    A hash table that with `capacity` buckets that accepts string keys
     """
 
     def __init__(self, capacity):
         # Your code here
-        self.ht = [-1]*capacity
         self.capacity = capacity
+        self.storage = [LinkedList()] * capacity
+        self.count = 0
 
     def get_num_slots(self):
         """
-        Return the length of the list you're using to hold the hash
-        table data. (Not the number of items stored in the hash table,
+        Return the length of the list you're using to hold the hashtable data. 
+        (Not the number of items stored in the hash table,
         but the number of slots in the main list.)
-
         One of the tests relies on this.
-
-        Implement this.
         """
         # Your code here
+        return len(self.storage)
 
     def get_load_factor(self):
         """
         Return the load factor for this hash table.
-
-        Implement this.
         """
         # Your code here
+        return self.count / len(self.storage)
 
     def fnv1(self, key):
         """
         FNV-1 Hash, 64-bit
-
-        Implement this, and/or DJB2.
         """
 
         # Your code here
@@ -58,20 +56,11 @@ class HashTable:
     def djb2(self, key):
         """
         DJB2 hash, 32-bit
-
-        Implement this, and/or FNV-1.
         """
-        # Your code here
-        # EXAMPLE source https://gist.github.com/mengzhuo/180cd6be8ba9e2743753
-        # def hash_djb2(s):
-        #         hash = 5381
-        #         for x in s:
-        #             hash = (( hash << 5) + hash) + ord(x)
-        #         return hash & 0xFFFFFFFF
 
         hash = 5381
-        for x in key[1:]:
-            hash = (hash << 5) + hash + ord(x)
+        for x in key:
+            hash = ((hash << 5) + hash) + ord(x)
         return hash
 
     def hash_index(self, key):
@@ -91,56 +80,91 @@ class HashTable:
 
     def put(self, key, value):
         """
-        Store the value with the given key.
-
-        Hash collisions should be handled with Linked List Chaining.
-
-        Implement this.
+        Store the value with the given key. Hash collisions should be handled with Linked List Chaining.
         """
         # Your code here
-        entry = HashTableEntry(key, value)
-        hashIndex = self.hash_index(key)
-        self.ht[hashIndex] = entry
+        index = self.hash_index(key)
+        # if LL is empty
+        if self.storage[index].head == None:
+            self.storage[index].head = HashTableEntry(key, value)
+            self.count += 1
+            return
+
+        else:
+            curr = self.storage[index].head
+            while curr.next:
+                if curr.key == key:
+                    curr.value = value
+                curr = curr.next
+            curr.next = HashTableEntry(key, value)
+            self.count += 1
 
     def delete(self, key):
         """
-        Remove the value stored with the given key.
-
-        Print a warning if the key is not found.
-
-        Implement this.
+        Remove the value stored with the given key. Print a warning if the key is not found.
         """
         # Your code here
-        hashIndex = self.hash_index(key)
-        entry = self.ht[hashIndex]
-        if entry == -1:
-            return "Key not found"
-        self.ht[hashIndex] = -1
+        index = self.hash_index(key)
+        curr = self.storage[index].head
+
+        if curr.key == key:
+            self.storage[index].head = self.storage[index].head.next
+            self.count -= 1
+            return
+
+        while curr.next:
+            prev = curr
+            curr = curr.next
+            if curr.key == key:
+                prev.next = curr.next
+                self.count -= 1
+                return None
 
     def get(self, key):
         """
-        Retrieve the value stored with the given key.
-
-        Returns None if the key is not found.
-
-        Implement this.
+        Retrieve the value stored with the given key. Returns None if the key is not found.
         """
         # Your code here
-        hashIndex = self.hash_index(key)
-        entry = self.ht[hashIndex]
-        if entry == -1:
+        index = self.hash_index(key)
+        curr = self.storage[index].head
+
+        if curr == None:
             return None
-        return entry.value
+
+        if curr.key == key:
+            return curr.value
+        while curr.next:
+            curr = curr.next
+            if curr.key == key:
+                return curr.value
+
+        return None
 
     def resize(self, new_capacity):
         """
-        Changes the capacity of the hash table and
-        rehashes all key/value pairs.
-
-        Implement this.
+        Changes the capacity of the hash table and rehashes all key/value pairs.
         """
         # Your code here
-        pass
+        self.capacity = new_capacity
+        self.capacity = new_capacity
+        new_list = [LinkedList()] * new_capacity
+
+        for i in self.storage:
+            curr = i.head
+
+            while curr is not None:
+                index = self.hash_index(curr.key)
+
+                if new_list[index].head == None:
+                    new_list[index].head = HashTableEntry(curr.key, curr.value)
+                else:
+                    node = HashTableEntry(curr.key, curr.value)
+
+                    node.next = new_list[index].head
+
+                    new_list[index].head = node
+                curr = curr.next
+        self.storage = new_list
 
 
 if __name__ == "__main__":
@@ -166,11 +190,11 @@ if __name__ == "__main__":
         print(ht.get(f"line_{i}"))
 
     # Test resizing
-    # old_capacity = ht.get_num_slots()
-    # ht.resize(ht.capacity * 2)
-    # new_capacity = ht.get_num_slots()
+    old_capacity = ht.get_num_slots()
+    ht.resize(ht.capacity * 2)
+    new_capacity = ht.get_num_slots()
 
-    # print(f"\nResized from {old_capacity} to {new_capacity}.\n")
+    print(f"\nResized from {old_capacity} to {new_capacity}.\n")
 
     # Test if data intact after resizing
     for i in range(1, 13):
